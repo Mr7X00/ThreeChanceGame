@@ -1,0 +1,23 @@
+{
+  "name": "three-chance-game",
+  "version": "1.0.0",
+  "description": "An online multiplayer guessing game for two players using separate devices.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "multiplayer",
+    "game",
+    "socketio",
+    "express",
+    "realtime"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.8.4"
+  }
+}

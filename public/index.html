@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Three Chance Game | 2-Player Online Duel</title>
+  <meta name="description" content="An online multiplayer game where two players compete across separate devices by guessing a secret number from 1 to 6.">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+
+  <!-- Bootstrap 5 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  
+  <!-- Bootstrap Icons (SVG Vector Icons) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Mobile-First Responsive App Shell -->
+  <div class="app-container">
+    
+    <!-- Top Navigation & Connection Status Bar -->
+    <header class="game-navbar d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <img src="assets/logo.svg" alt="Three Chance Game Logo" class="brand-logo" width="34" height="34">
+        <span class="brand-text">THREE CHANCE</span>
+      </div>
+      
+      <!-- Live Real-Time Socket Connection Badge -->
+      <div id="connection-badge" class="status-pill" aria-label="Server connection status">
+        <span id="connection-dot" class="status-dot connecting"></span>
+        <span id="connection-text">Connecting...</span>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main>
+      
+      <!-- ==========================================
+           VIEW 1: LANDING PAGE
+           ========================================== -->
+      <div id="landing-view" class="view-panel active" aria-label="Main Menu">
+        
+        <!-- Hero Header -->
+        <section class="hero-section text-center">
+          <div class="hero-badge">
+            <i class="bi bi-broadcast" aria-hidden="true"></i>
+            <span>Real-Time 2-Player Duel</span>
+          </div>
+          <h1 class="game-title">THREE CHANCE GAME</h1>
+          <p class="game-tagline">
+            Two players compete across separate devices to guess the secret number.
+          </p>
+        </section>
+
+        <!-- Primary Action Buttons -->
+        <section class="action-card mb-4" aria-label="Game Entry Options">
+          <div class="d-grid gap-3">
+            <button 
+              type="button" 
+              id="btn-nav-create" 
+              class="btn btn-action-primary"
+            >
+              <i class="bi bi-plus-circle-fill me-2" aria-hidden="true"></i>
+              <span>Create Game</span>
+            </button>
+
+            <button 
+              type="button" 
+              id="btn-nav-join" 
+              class="btn btn-action-secondary"
+            >
+              <i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>
+              <span>Join Game</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Brief Game Rules Section -->
+        <section class="game-card" aria-label="Game Rules and How It Works">
+          <div class="card-title-bar">
+            <h2 class="card-heading">
+              <i class="bi bi-info-circle-fill text-info" aria-hidden="true"></i>
+              <span>How To Play</span>
+            </h2>
+          </div>
+
+          <div class="rules-list">
+            <!-- Rule 1 -->
+            <div class="rule-card">
+              <div class="rule-icon-box">
+                <i class="bi bi-cpu-fill" aria-hidden="true"></i>
+              </div>
+              <div class="rule-text-content">
+                <div class="rule-title">Secret Generation</div>
+                <p class="rule-desc">Computer generates one secret number from 1 to 6.</p>
+              </div>
+            </div>
+
+            <!-- Rule 2 -->
+            <div class="rule-card">
+              <div class="rule-icon-box">
+                <i class="bi bi-shield-check" aria-hidden="true"></i>
+              </div>
+              <div class="rule-text-content">
+                <div class="rule-title">Limited Tries</div>
+                <p class="rule-desc">Each player gets three guesses.</p>
+              </div>
+            </div>
+
+            <!-- Rule 3 -->
+            <div class="rule-card">
+              <div class="rule-icon-box">
+                <i class="bi bi-trophy-fill" aria-hidden="true"></i>
+              </div>
+              <div class="rule-text-content">
+                <div class="rule-title">Victory Condition</div>
+                <p class="rule-desc">The player who guesses correctly wins.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ==========================================
+           VIEW 2: CREATE GAME (Player 1 Entry)
+           ========================================== -->
+      <div id="create-view" class="view-panel" aria-label="Create Game Screen" hidden>
+        
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <button type="button" id="btn-create-back" class="btn btn-back" aria-label="Back to main menu">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            <span>Back</span>
+          </button>
+          <span class="badge bg-primary-subtle text-info border border-info-subtle font-monospace">
+            Host Mode
+          </span>
+        </div>
+
+        <section class="game-card">
+          <div class="card-title-bar">
+            <h2 class="card-heading">
+              <i class="bi bi-plus-circle-fill text-info" aria-hidden="true"></i>
+              <span>Create New Game</span>
+            </h2>
+          </div>
+
+          <p class="text-secondary small mb-4">
+            Host a new 2-player match. Enter your player name to generate a unique room code.
+          </p>
+
+          <!-- Feedback Alerts -->
+          <div 
+            id="create-alert-error" 
+            class="alert alert-danger d-none d-flex align-items-center gap-2" 
+            role="alert" 
+            aria-live="polite"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span id="create-error-msg"></span>
+          </div>
+
+          <!-- Create Game Form -->
+          <form id="create-game-form" novalidate>
+            <div class="mb-4">
+              <label for="create-player-name" class="form-label text-light fw-semibold">
+                Player 1 Name <span class="text-danger">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-person-fill input-icon" aria-hidden="true"></i>
+                <input 
+                  type="text" 
+                  id="create-player-name" 
+                  name="playerName" 
+                  class="form-control form-control-game" 
+                  placeholder="Enter your name (e.g. Alex)" 
+                  maxlength="20"
+                  autocomplete="off"
+                  required
+                >
+              </div>
+              <div class="form-text text-muted">
+                <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                <span>Your opponent will see this name during the match.</span>
+              </div>
+            </div>
+
+            <!-- Submit Action -->
+            <div class="d-grid gap-2">
+              <button 
+                type="submit" 
+                id="btn-create-submit" 
+                class="btn btn-action-primary"
+              >
+                <span id="create-btn-spinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                <i id="create-btn-icon" class="bi bi-plus-circle-fill me-1" aria-hidden="true"></i>
+                <span id="create-btn-text">Create Room</span>
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <!-- ==========================================
+           VIEW 3: JOIN GAME (Player 2 Entry)
+           ========================================== -->
+      <div id="join-view" class="view-panel" aria-label="Join Game Screen" hidden>
+        
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <button type="button" id="btn-join-back" class="btn btn-back" aria-label="Back to main menu">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            <span>Back</span>
+          </button>
+          <span class="badge bg-secondary-subtle text-secondary border border-secondary font-monospace">
+            Guest Mode
+          </span>
+        </div>
+
+        <section class="game-card">
+          <div class="card-title-bar">
+            <h2 class="card-heading">
+              <i class="bi bi-box-arrow-in-right text-info" aria-hidden="true"></i>
+              <span>Join Existing Game</span>
+            </h2>
+          </div>
+
+          <p class="text-secondary small mb-4">
+            Connect to an active room hosted by Player 1 on another device.
+          </p>
+
+          <!-- Feedback Alerts -->
+          <div 
+            id="join-alert-error" 
+            class="alert alert-danger d-none d-flex align-items-center gap-2" 
+            role="alert" 
+            aria-live="polite"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span id="join-error-msg"></span>
+          </div>
+
+          <!-- Join Game Form -->
+          <form id="join-game-form" novalidate>
+            <!-- Player 2 Name -->
+            <div class="mb-3">
+              <label for="join-player-name" class="form-label text-light fw-semibold">
+                Player 2 Name <span class="text-danger">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-person-fill input-icon" aria-hidden="true"></i>
+                <input 
+                  type="text" 
+                  id="join-player-name" 
+                  name="playerName" 
+                  class="form-control form-control-game" 
+                  placeholder="Enter your name (e.g. Jordan)" 
+                  maxlength="20"
+                  autocomplete="off"
+                  required
+                >
+              </div>
+            </div>
+
+            <!-- Game Code -->
+            <div class="mb-4">
+              <label for="join-game-code" class="form-label text-light fw-semibold">
+                Game Code <span class="text-danger">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-key-fill input-icon" aria-hidden="true"></i>
+                <input 
+                  type="text" 
+                  id="join-game-code" 
+                  name="gameCode" 
+                  class="form-control form-control-game text-uppercase font-monospace letter-spacing-wide" 
+                  placeholder="e.g. A7K92" 
+                  maxlength="5"
+                  autocomplete="off"
+                  required
+                >
+              </div>
+              <div class="form-text text-muted">
+                <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                <span>Ask Player 1 for their 5-character match room code.</span>
+              </div>
+            </div>
+
+            <!-- Submit Action -->
+            <div class="d-grid gap-2">
+              <button 
+                type="submit" 
+                id="btn-join-submit" 
+                class="btn btn-action-primary"
+              >
+                <span id="join-btn-spinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                <i id="join-btn-icon" class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>
+                <span id="join-btn-text">Join Room</span>
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <!-- ==========================================
+           VIEW 4: ACTIVE ROOM & MATCH LOBBY VIEW
+           ========================================== -->
+      <div id="room-view" class="view-panel" aria-label="Game Room Lobby" hidden>
+        
+        <!-- Room Bar -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span class="badge bg-dark border border-secondary font-monospace" id="room-role-badge">
+            Player Room
+          </span>
+          <button type="button" id="btn-leave-room" class="btn btn-back btn-sm text-danger border-danger-subtle">
+            <i class="bi bi-box-arrow-left me-1" aria-hidden="true"></i>
+            <span>Leave Room</span>
+          </button>
+        </div>
+
+        <!-- Prominent Game Code Card -->
+        <section class="code-display-card mb-3">
+          <div class="code-card-header">
+            <span class="code-label">GAME CODE</span>
+            <span class="badge bg-info-subtle text-info border border-info-subtle font-monospace">Room Active</span>
+          </div>
+          <div class="code-value-wrap">
+            <span id="display-game-code" class="display-code-text">-----</span>
+            <button type="button" id="btn-copy-code" class="btn btn-copy" title="Copy Game Code" aria-label="Copy Game Code">
+              <i class="bi bi-clipboard" id="copy-icon" aria-hidden="true"></i>
+              <span id="copy-text">Copy</span>
+            </button>
+          </div>
+          <p class="code-hint mb-0">
+            Share this code with your opponent so they can join on another device.
+          </p>
+        </section>
+
+        <!-- Room State Banners -->
+        <!-- Banner A: Waiting for Player 2 -->
+        <div id="room-waiting-banner" class="status-banner waiting mb-3">
+          <div class="spinner-border spinner-border-sm text-warning flex-shrink-0" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <div class="text-start">
+            <div class="fw-bold text-warning">Waiting for Player 2...</div>
+            <div class="small text-secondary">Awaiting opponent connection via game code.</div>
+          </div>
+        </div>
+
+        <!-- Banner B: Both Players Ready -->
+        <div id="room-ready-banner" class="status-banner ready mb-3 d-none">
+          <div class="ready-badge-pill mb-1">
+            <i class="bi bi-lightning-charge-fill me-1" aria-hidden="true"></i>
+            <span>Both Players Ready!</span>
+          </div>
+          <div class="ready-subtext">
+            Both devices are synchronized. Starting game arena...
+          </div>
+        </div>
+
+        <!-- Two-Player Matchup Card -->
+        <section class="game-card mb-3" aria-label="Players Connected">
+          <div class="card-title-bar">
+            <h2 class="card-heading">
+              <i class="bi bi-people-fill text-info" aria-hidden="true"></i>
+              <span>Matchup Status</span>
+            </h2>
+            <span id="matchup-state-badge" class="badge bg-warning-subtle text-warning border border-warning-subtle font-monospace">
+              1 / 2 Connected
+            </span>
+          </div>
+
+          <div class="matchup-grid">
+            <!-- Player 1 Box -->
+            <div class="player-box active-user" id="lobby-p1-box">
+              <div class="player-avatar-circle">
+                <i class="bi bi-person-fill" aria-hidden="true"></i>
+              </div>
+              <div id="lobby-p1-name" class="player-name">Player 1</div>
+              <div class="player-device-tag text-info">
+                <i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>
+                <span id="lobby-p1-role-text">Host</span>
+              </div>
+            </div>
+
+            <!-- Center VS Badge -->
+            <div class="vs-badge-container">
+              <div class="vs-badge" id="lobby-vs-badge">VS</div>
+            </div>
+
+            <!-- Player 2 Box -->
+            <div class="player-box opponent" id="lobby-p2-box">
+              <div class="player-avatar-circle" id="lobby-p2-avatar">
+                <i class="bi bi-hourglass-split text-warning" id="lobby-p2-icon" aria-hidden="true"></i>
+              </div>
+              <div id="lobby-p2-name" class="player-name text-secondary">Waiting...</div>
+              <div class="player-device-tag" id="lobby-p2-status-tag">
+                <span id="lobby-p2-status-text">Pending</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Opponent Alert Area (For disconnects) -->
+        <div id="room-alert-info" class="alert alert-warning d-none d-flex align-items-center gap-2 mb-3" role="alert">
+          <i class="bi bi-exclamation-circle-fill flex-shrink-0" aria-hidden="true"></i>
+          <span id="room-alert-msg"></span>
+        </div>
+
+      </div>
+
+      <!-- ==========================================
+           VIEW 5: GAME STARTED / 3-CHANCE SELECTION ARENA
+           ========================================== -->
+      <div id="game-view" class="view-panel" aria-label="Game Play Arena" hidden>
+        
+        <!-- Header Bar -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-info border border-info-subtle font-monospace" id="game-room-code-badge">
+              ROOM: -----
+            </span>
+            <span class="badge bg-dark border border-secondary font-monospace" id="game-role-badge">
+              Player 1
+            </span>
+          </div>
+          <button type="button" id="btn-game-leave" class="btn btn-back btn-sm text-danger border-danger-subtle">
+            <i class="bi bi-box-arrow-left me-1" aria-hidden="true"></i>
+            <span>Quit</span>
+          </button>
+        </div>
+
+        <!-- Hero: GAME STARTED Banner -->
+        <section class="game-card text-center mb-3">
+          <div class="game-status-badge mb-2">
+            <span class="status-pulse-dot"></span>
+            <span class="fw-bold tracking-wide">GAME STARTED</span>
+          </div>
+          <h2 class="game-instruction-title">Guess the secret number</h2>
+          <p class="game-instruction-subtitle mb-0">
+            Choose 3 numbers from 1 to 6
+          </p>
+        </section>
+
+        <!-- Player Matchup Mini-Bar -->
+        <section class="game-card mb-3 py-2 px-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-person-fill text-info" aria-hidden="true"></i>
+              <span id="game-p1-display" class="fw-bold small">Player 1</span>
+            </div>
+            <span class="badge bg-primary text-light font-monospace small px-2">VS</span>
+            <div class="d-flex align-items-center gap-2">
+              <span id="game-p2-display" class="fw-bold small">Player 2</span>
+              <i class="bi bi-person-fill" style="color: #8b5cf6;" aria-hidden="true"></i>
+            </div>
+          </div>
+        </section>
+
+        <!-- The 3 Guess Slots: Guess 1, Guess 2, Guess 3 -->
+        <section class="game-card mb-3" aria-label="Guess Slots">
+          <div class="card-title-bar">
+            <h3 class="card-heading">
+              <i class="bi bi-shield-check text-info" aria-hidden="true"></i>
+              <span>Three Guess Slots</span>
+            </h3>
+            <span id="guesses-count-badge" class="badge bg-secondary-subtle text-secondary border border-secondary font-monospace">
+              0 / 3 Selected
+            </span>
+          </div>
+
+          <!-- Vertical list with Guess 1: [ Select ], Guess 2: [ Select ], Guess 3: [ Select ] -->
+          <div class="guess-slots-list">
+            <!-- Slot 1 -->
+            <div class="guess-slot-row" id="slot-row-1">
+              <span class="slot-label">Guess 1:</span>
+              <div class="slot-select-box unselected" id="slot-val-1">
+                <span class="slot-text">[ Select ]</span>
+              </div>
+            </div>
+
+            <!-- Slot 2 -->
+            <div class="guess-slot-row" id="slot-row-2">
+              <span class="slot-label">Guess 2:</span>
+              <div class="slot-select-box unselected" id="slot-val-2">
+                <span class="slot-text">[ Select ]</span>
+              </div>
+            </div>
+
+            <!-- Slot 3 -->
+            <div class="guess-slot-row" id="slot-row-3">
+              <span class="slot-label">Guess 3:</span>
+              <div class="slot-select-box unselected" id="slot-val-3">
+                <span class="slot-text">[ Select ]</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Number Buttons Keypad: [1] [2] [3] [4] [5] [6] -->
+        <section class="game-card mb-3" id="keypad-card" aria-label="Number Buttons">
+          <div class="card-title-bar">
+            <h3 class="card-heading">
+              <i class="bi bi-grid-3x2-gap-fill text-info" aria-hidden="true"></i>
+              <span>Number Buttons</span>
+            </h3>
+            <span class="text-secondary small">Duplicates allowed</span>
+          </div>
+
+          <!-- Buttons: [1] [2] [3] [4] [5] [6] -->
+          <div class="number-buttons-grid mb-3">
+            <button type="button" class="btn btn-num-choice" data-number="1">[ 1 ]</button>
+            <button type="button" class="btn btn-num-choice" data-number="2">[ 2 ]</button>
+            <button type="button" class="btn btn-num-choice" data-number="3">[ 3 ]</button>
+            <button type="button" class="btn btn-num-choice" data-number="4">[ 4 ]</button>
+            <button type="button" class="btn btn-num-choice" data-number="5">[ 5 ]</button>
+            <button type="button" class="btn btn-num-choice" data-number="6">[ 6 ]</button>
+          </div>
+
+          <!-- Action Buttons: Clear/Reset & Submit Guesses -->
+          <div class="row g-2">
+            <div class="col-4">
+              <button type="button" id="btn-clear-guesses" class="btn btn-action-clear w-100" disabled>
+                <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>
+                <span>Clear</span>
+              </button>
+            </div>
+            <div class="col-8">
+              <button type="button" id="btn-submit-guesses" class="btn btn-action-primary w-100" disabled>
+                <span id="submit-spinner" class="spinner-border spinner-border-sm me-2 d-none" role="status"></span>
+                <i id="submit-icon" class="bi bi-check2-circle me-1" aria-hidden="true"></i>
+                <span id="submit-text">Submit Guesses</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Post-Submission Waiting Card -->
+        <section id="submission-status-card" class="submission-locked-card mb-3 d-none">
+          <div class="d-flex align-items-center gap-3">
+            <div class="spinner-border text-info flex-shrink-0" role="status" style="width: 1.5rem; height: 1.5rem;">
+              <span class="visually-hidden">Waiting...</span>
+            </div>
+            <div>
+              <div class="submission-title">Your guesses have been submitted.</div>
+              <div class="submission-subtext">Waiting for the other player...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Server Vault Info Card (Locked Confidential) -->
+        <section class="game-card mb-3">
+          <div class="vault-info-box">
+            <div class="vault-icon">
+              <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+            </div>
+            <div class="vault-text">
+              <div class="vault-title">Single Secret Number (1 to 6)</div>
+              <div class="vault-desc">
+                Locked on server. Kept hidden from both players until the duel concludes.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Disconnect Warning Alert in Game View -->
+        <div id="game-alert-info" class="alert alert-warning d-none d-flex align-items-center gap-2 mb-3" role="alert">
+          <i class="bi bi-exclamation-circle-fill flex-shrink-0" aria-hidden="true"></i>
+          <span id="game-alert-msg"></span>
+        </div>
+
+      </div>
+
+      <!-- ==========================================
+           VIEW 6: PROFESSIONAL FINAL RESULT SCREEN
+           ========================================== -->
+      <div id="result-view" class="view-panel" aria-label="Game Final Result" hidden>
+        
+        <!-- Header Bar -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span class="badge bg-primary-subtle text-info border border-info-subtle font-monospace" id="result-room-badge">
+            ROOM: -----
+          </span>
+          <span class="badge bg-dark border border-secondary font-monospace" id="result-role-badge">
+            Final Result
+          </span>
+        </div>
+
+        <!-- 1. FINAL RESULT HEADLINE BANNER CARD -->
+        <section class="game-card text-center mb-3" id="outcome-card">
+          <div id="outcome-icon-container" class="outcome-icon-circle mb-3">
+            <i class="bi bi-trophy-fill" id="outcome-icon" aria-hidden="true"></i>
+          </div>
+          <h1 class="outcome-headline mb-1" id="outcome-headline">PLAYER 1 WINS</h1>
+          <p class="outcome-subtext mb-0" id="outcome-subtext">
+            Player 1 guessed the secret number correctly!
+          </p>
+        </section>
+
+        <!-- 2. COMPUTER SECRET NUMBER CARD -->
+        <section class="secret-reveal-card mb-3">
+          <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+            <i class="bi bi-cpu-fill text-warning fs-5" aria-hidden="true"></i>
+            <span class="secret-label">Computer Number:</span>
+            <span class="secret-digit-badge" id="revealed-secret-number">-</span>
+          </div>
+          <div class="secret-hint">
+            The computer generated this single secret number for the entire match.
+          </div>
+        </section>
+
+        <!-- 3. PLAYERS GUESSES BREAKDOWN -->
+        <section class="game-card mb-3" aria-label="Player Guess Outcomes">
+          <div class="card-title-bar">
+            <h3 class="card-heading">
+              <i class="bi bi-card-checklist text-info" aria-hidden="true"></i>
+              <span>Guesses Breakdown</span>
+            </h3>
+          </div>
+
+          <!-- Player 1 Summary Block -->
+          <div class="player-summary-card mb-3" id="result-p1-card">
+            <div class="player-summary-header d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-bold text-light d-flex align-items-center gap-2">
+                <i class="bi bi-person-fill text-info" aria-hidden="true"></i>
+                <span id="result-p1-label">Player 1:</span>
+              </div>
+            </div>
+            <!-- Guesses flow: 2 → 4 → 6 -->
+            <div class="player-guesses-flow" id="result-p1-flow">
+              <!-- Rendered via JS -->
+            </div>
+            <!-- Correct guess: 4 OR No correct guess -->
+            <div class="guess-status-line mt-2" id="result-p1-status-line">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <hr class="border-secondary my-3 opacity-25">
+
+          <!-- Player 2 Summary Block -->
+          <div class="player-summary-card" id="result-p2-card">
+            <div class="player-summary-header d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-bold text-light d-flex align-items-center gap-2">
+                <i class="bi bi-person-fill" style="color: #8b5cf6;" aria-hidden="true"></i>
+                <span id="result-p2-label">Player 2:</span>
+              </div>
+            </div>
+            <!-- Guesses flow: 1 → 3 → 5 -->
+            <div class="player-guesses-flow" id="result-p2-flow">
+              <!-- Rendered via JS -->
+            </div>
+            <!-- Correct guess: 4 OR No correct guess -->
+            <div class="guess-status-line mt-2" id="result-p2-status-line">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Rematch Request Notification Alert -->
+        <div id="rematch-notification" class="alert alert-info d-none d-flex align-items-center gap-2 mb-3" role="status">
+          <i class="bi bi-bell-fill flex-shrink-0" aria-hidden="true"></i>
+          <span id="rematch-notification-msg">Your opponent wants to play again! Click Play Again to accept.</span>
+        </div>
+
+        <!-- 4. ACTION BUTTONS: PLAY AGAIN & LEAVE GAME -->
+        <div class="d-grid gap-2">
+          <button type="button" id="btn-play-again" class="btn btn-action-primary">
+            <span id="play-again-spinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+            <i id="play-again-icon" class="bi bi-arrow-repeat me-2" aria-hidden="true"></i>
+            <span id="play-again-text">Play Again</span>
+          </button>
+          
+          <button type="button" id="btn-leave-game" class="btn btn-action-secondary">
+            <i class="bi bi-box-arrow-left me-2" aria-hidden="true"></i>
+            <span>Leave Game</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ==========================================
+           UNIVERSAL DISCONNECT / MATCH INTERRUPTED MODAL
+           ========================================== -->
+      <div id="disconnect-modal-backdrop" class="modal-backdrop-custom d-none" role="dialog" aria-modal="true" aria-labelledby="disconnect-modal-title">
+        <div class="modal-card-custom">
+          <div class="modal-icon-circle text-danger mb-3">
+            <i class="bi bi-wifi-off" aria-hidden="true"></i>
+          </div>
+          <h3 id="disconnect-modal-title" class="modal-heading mb-2">Match Interrupted</h3>
+          <p id="disconnect-modal-msg" class="modal-body-text mb-4">
+            Your opponent disconnected from the game. The match cannot continue.
+          </p>
+          <button type="button" id="btn-disconnect-home" class="btn btn-action-primary w-100">
+            <i class="bi bi-house-door-fill me-2" aria-hidden="true"></i>
+            <span>Return to Home Screen</span>
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer System Diagnostics -->
+    <footer class="system-footer">
+      <div class="mb-1">
+        <span>Socket Connection: </span>
+        <span id="socket-id" class="socket-id-code">Connecting...</span>
+      </div>
+      <div>Three Chance Game &bull; Real-Time Multiplayer</div>
+    </footer>
+
+  </div>
+
+  <!-- Socket.IO Client Library (Served via Express server) -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- Game Client Script -->
+  <script src="js/game.js"></script>
+</body>
+</html>
